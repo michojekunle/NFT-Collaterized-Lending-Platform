@@ -8,6 +8,7 @@ pragma solidity ^0.8.0;
 import {IDiamondCut} from "../interfaces/IDiamondCut.sol";
 
 library LibDiamond {
+    
     error InValidFacetCutAction();
     error NotDiamondOwner();
     error NoSelectorsInFacet();
@@ -40,7 +41,7 @@ library LibDiamond {
         bool isActive;
     }
 
-     struct Collateral {
+    struct Collateral {
         address nftAddress;
         uint256 tokenId;
         uint256 loanAmount;
@@ -62,11 +63,11 @@ library LibDiamond {
         mapping(bytes4 => bool) supportedInterfaces;
         // owner of the contract
         address contractOwner;
+        address nftCollateralFacetAddress;
         uint256 fixedInterestRate;
         uint256 availableFunds;
         mapping(address => Collateral) collaterals;
         mapping(address => Loan) loans;
-
     }
 
     function diamondStorage()
@@ -104,6 +105,7 @@ library LibDiamond {
     event NFTReleased(address indexed user, address nftContract, uint256 nftId);
     event NFTSeized(address indexed user, address nftContract, uint256 nftId);
 
+    event NftCollateralFacetAddressUpdated(address newNftCollateralFacetAddress);
 
     function setContractOwner(address _newOwner) internal {
         DiamondStorage storage ds = diamondStorage();

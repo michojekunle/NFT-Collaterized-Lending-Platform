@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "../libraries/LibDiamond.sol";
+import {LibDiamond} from "../libraries/LibDiamond.sol";
+import "openzeppelin-contracts/contracts/token/ERC721/IERC721.sol";
 
 contract NFTCollateralFacet {
     // Deposit NFT as collateral
@@ -13,10 +13,11 @@ contract NFTCollateralFacet {
         nft.transferFrom(msg.sender, address(this), _nftId);
 
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
-        
+
         ds.collaterals[msg.sender] = LibDiamond.Collateral({
-            nftContract: _nftContract,
-            nftId: _nftId,
+            nftAddress: _nftContract,
+            tokenId: _nftId,
+            loanAmount: 0,
             isCollateralized: true
         });
 
@@ -27,14 +28,22 @@ contract NFTCollateralFacet {
     function releaseNFT(address _user) external {
         LibDiamond.enforceIsContractOwner(); // Ensure only diamond owner can release NFT
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
-        
+
         LibDiamond.Collateral storage collateral = ds.collaterals[_user];
         require(collateral.isCollateralized, "No collateral to release");
 
-        IERC721(collateral.nftContract).transferFrom(address(this), _user, collateral.nftId);
+        IERC721(collateral.nftAddress).transferFrom(
+            address(this),
+            _user,
+            collateral.tokenId
+        );
 
         collateral.isCollateralized = false;
-        emit LibDiamond.NFTReleased(_user, collateral.nftContract, collateral.nftId);
+        emit LibDiamond.NFTReleased(
+            _user,
+            collateral.nftAddress,
+            collateral.tokenId
+        );
     }
 
     // Seize NFT in case of default
@@ -44,9 +53,17 @@ contract NFTCollateralFacet {
         LibDiamond.Collateral memory collateral = ds.collaterals[_user];
         require(collateral.isCollateralized, "No collateral to seize");
 
-        IERC721(collateral.nftContract).transferFrom(address(this), LibDiamond.contractOwner(), collateral.nftId);
+        IERC721(collateral.nftAddress).transferFrom(
+            address(this),
+            LibDiamond.contractOwner(),
+            collateral.tokenId
+        );
 
         collateral.isCollateralized = false;
-        emit LibDiamond.NFTSeized(_user, collateral.nftContract, collateral.nftId);
+        emit LibDiamond.NFTSeized(
+            _user,
+            collateral.nftAddress,
+            collateral.tokenId
+        );
     }
 }

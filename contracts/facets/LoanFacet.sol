@@ -4,13 +4,18 @@ pragma solidity ^0.8.0;
 import "./NFTCollateralFacet.sol";
 import "../libraries/LibDiamond.sol";
 
-contract LoanManagement is NFTCollateralFacet {
+contract LoanFacet {
+    constructor(address _nftCollateralFacetAddress) {
+        LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
+
+        ds.nftCollateralFacetAddress = _nftCollateralFacetAddress;
+    }
 
     // Create a loan with fixed interest rate
     function createLoan(uint256 _amount) external {
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
         LibDiamond.Collateral storage collateral = ds.collaterals[msg.sender];
-        
+
         require(collateral.isCollateralized, "No collateral deposited");
         require(!ds.loans[msg.sender].isActive, "Existing loan active");
 
@@ -41,7 +46,7 @@ contract LoanManagement is NFTCollateralFacet {
         loan.isActive = false;
         emit LibDiamond.LoanRepaid(msg.sender, msg.value);
 
-        NFTCollateralFacet.releaseNFT(msg.sender);
+        NFTCollateralFacet(ds.nftCollateralFacetAddress).releaseNFT(msg.sender);
     }
 
     // Liquidate the loan if past due date
@@ -54,8 +59,21 @@ contract LoanManagement is NFTCollateralFacet {
         require(block.timestamp > loan.dueDate, "Loan not overdue");
 
         loan.isActive = false;
-        NFTCollateralFacet.seizeNFT(_user);
+        NFTCollateralFacet(ds.nftCollateralFacetAddress).seizeNFT(_user);
 
         emit LibDiamond.LoanLiquidated(_user);
+    }
+
+    function updateNftCollateralFacetAddress(
+        address _nftCollateralFacetAddress
+    ) external {
+        LibDiamond.enforceIsContractOwner();
+        LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
+
+        ds.nftCollateralFacetAddress = _nftCollateralFacetAddress;
+
+        emit LibDiamond.NftCollateralFacetAddressUpdated(
+            _nftCollateralFacetAddress
+        );
     }
 }

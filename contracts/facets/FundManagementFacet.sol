@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../libraries/LibDiamond.sol";
+import {LibDiamond} from "../libraries/LibDiamond.sol";
 
 contract FundManagementFacet {
-
     // Deposit funds into the contract
     function deposit() external payable {
         require(msg.value > 0, "Deposit amount must be greater than zero");

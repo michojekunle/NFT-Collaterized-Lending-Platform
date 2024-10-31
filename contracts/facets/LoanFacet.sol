@@ -7,7 +7,6 @@ import "../libraries/LibDiamond.sol";
 contract LoanFacet {
     constructor(address _nftCollateralFacetAddress) {
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
-
         ds.nftCollateralFacetAddress = _nftCollateralFacetAddress;
     }
 

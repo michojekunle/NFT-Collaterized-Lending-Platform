@@ -8,7 +8,6 @@ pragma solidity ^0.8.0;
 import {IDiamondCut} from "../interfaces/IDiamondCut.sol";
 
 library LibDiamond {
-    
     error InValidFacetCutAction();
     error NotDiamondOwner();
     error NoSelectorsInFacet();
@@ -22,6 +21,7 @@ library LibDiamond {
     error NonEmptyCalldata();
     error EmptyCalldata();
     error InitCallFailed();
+    error ContractNotAuthorized();
     bytes32 constant DIAMOND_STORAGE_POSITION =
         keccak256("diamond.standard.diamond.storage");
 
@@ -68,6 +68,7 @@ library LibDiamond {
         uint256 availableFunds;
         mapping(address => Collateral) collaterals;
         mapping(address => Loan) loans;
+        mapping(address => bool) authorizedContracts;
     }
 
     function diamondStorage()
@@ -105,7 +106,9 @@ library LibDiamond {
     event NFTReleased(address indexed user, address nftContract, uint256 nftId);
     event NFTSeized(address indexed user, address nftContract, uint256 nftId);
 
-    event NftCollateralFacetAddressUpdated(address newNftCollateralFacetAddress);
+    event NftCollateralFacetAddressUpdated(
+        address newNftCollateralFacetAddress
+    );
 
     function setContractOwner(address _newOwner) internal {
         DiamondStorage storage ds = diamondStorage();
@@ -145,6 +148,25 @@ library LibDiamond {
 
     function availableFunds() internal view returns (uint256) {
         return diamondStorage().availableFunds;
+    }
+
+    function authorizeContract(address _contract) internal {
+        DiamondStorage storage ds = diamondStorage();
+        ds.authorizedContracts[_contract] = true;
+    }
+
+    function revokeContractAuthorization(address _contract) internal {
+        DiamondStorage storage ds = diamondStorage();
+        ds.authorizedContracts[_contract] = false;
+    }
+
+    function isAuthorized(address _contract) internal view returns (bool) {
+        DiamondStorage storage ds = diamondStorage();
+        return ds.authorizedContracts[_contract] || _contract == contractOwner();
+    }
+
+    function enforceIsContractAuthorized() internal view {
+        if(!isAuthorized(msg.sender)) revert ContractNotAuthorized();
     }
 
     event DiamondCut(

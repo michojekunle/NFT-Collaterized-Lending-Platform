@@ -26,7 +26,7 @@ contract NFTCollateralFacet {
 
     // Release NFT back to the user after repayment
     function releaseNFT(address _user) external {
-        LibDiamond.enforceIsContractOwner(); // Ensure only diamond owner can release NFT
+        LibDiamond.enforceIsContractAuthorized(); // Ensure only diamond owner or authorized contract can release NFT
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
 
         LibDiamond.Collateral storage collateral = ds.collaterals[_user];
@@ -48,7 +48,7 @@ contract NFTCollateralFacet {
 
     // Seize NFT in case of default
     function seizeNFT(address _user) external {
-        LibDiamond.enforceIsContractOwner(); // Only diamond owner can seize NFT
+        LibDiamond.enforceIsContractAuthorized(); // Ensure only diamond owner or authorized contract can seize NFT
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
         LibDiamond.Collateral memory collateral = ds.collaterals[_user];
         require(collateral.isCollateralized, "No collateral to seize");

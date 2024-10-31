@@ -63,5 +63,9 @@ contract Diamond {
         return "THIS IS AN EXAMPLE OF AN IMMUTABLE FUNCTION";
     }
 
-    receive() external payable {}
+    receive() external payable {
+        require(msg.value > 0, "Must send ether to deposit");
+        LibDiamond.depositFunds(msg.value); // Update diamond storage with new funds
+        emit LibDiamond.FundsDeposited(msg.sender, msg.value); // Log the deposit
+    }
 }

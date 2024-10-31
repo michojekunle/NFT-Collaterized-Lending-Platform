@@ -34,6 +34,21 @@ library LibDiamond {
         uint256 facetAddressPosition; // position of facetAddress in facetAddresses array
     }
 
+    struct Loan {
+        uint256 amount;
+        uint256 dueDate;
+        bool isActive;
+    }
+
+     struct Collateral {
+        address nftAddress;
+        uint256 tokenId;
+        uint256 loanAmount;
+        bool isCollateralized;
+    }
+
+    uint256 constant loanDuration = 30 days;
+
     struct DiamondStorage {
         // maps function selector to the facet address and
         // the position of the selector in the facetFunctionSelectors.selectors array
@@ -47,6 +62,11 @@ library LibDiamond {
         mapping(bytes4 => bool) supportedInterfaces;
         // owner of the contract
         address contractOwner;
+        uint256 fixedInterestRate;
+        uint256 availableFunds;
+        mapping(address => Collateral) collaterals;
+        mapping(address => Loan) loans;
+
     }
 
     function diamondStorage()
@@ -65,6 +85,26 @@ library LibDiamond {
         address indexed newOwner
     );
 
+    event LoanCreated(
+        address indexed borrower,
+        uint256 amount,
+        uint256 interestRate
+    );
+    event LoanRepaid(address indexed borrower, uint256 amount);
+    event LoanLiquidated(address indexed borrower);
+
+    event FundsDeposited(address indexed user, uint256 amount);
+    event FundsWithdrawn(address indexed user, uint256 amount);
+
+    event NFTDeposited(
+        address indexed user,
+        address nftContract,
+        uint256 nftId
+    );
+    event NFTReleased(address indexed user, address nftContract, uint256 nftId);
+    event NFTSeized(address indexed user, address nftContract, uint256 nftId);
+
+
     function setContractOwner(address _newOwner) internal {
         DiamondStorage storage ds = diamondStorage();
         address previousOwner = ds.contractOwner;
@@ -79,6 +119,30 @@ library LibDiamond {
     function enforceIsContractOwner() internal view {
         if (msg.sender != diamondStorage().contractOwner)
             revert NotDiamondOwner();
+    }
+
+    function setInterestRate(uint256 _rate) internal {
+        DiamondStorage storage ds = diamondStorage();
+        ds.fixedInterestRate = _rate;
+    }
+
+    function interestRate() internal view returns (uint256) {
+        return diamondStorage().fixedInterestRate;
+    }
+
+    function depositFunds(uint256 amount) internal {
+        DiamondStorage storage ds = diamondStorage();
+        ds.availableFunds += amount;
+    }
+
+    function withdrawFunds(uint256 amount) internal {
+        DiamondStorage storage ds = diamondStorage();
+        require(ds.availableFunds >= amount, "Insufficient funds");
+        ds.availableFunds -= amount;
+    }
+
+    function availableFunds() internal view returns (uint256) {
+        return diamondStorage().availableFunds;
     }
 
     event DiamondCut(

@@ -12,7 +12,6 @@ import "../contracts/Diamond.sol";
 
 import "./helpers/DiamondUtils.sol";
 
-
 contract DiamondDeployer is DiamondUtils, IDiamondCut {
     //contract types of facets to be deployed
     Diamond diamond;
@@ -23,7 +22,8 @@ contract DiamondDeployer is DiamondUtils, IDiamondCut {
     LoanFacet loanF;
     FundManagementFacet fundMgmtF;
 
-    function testDeployDiamond() public {
+    // setup tests
+    function setUp() public {
         //deploy facets
         dCutFacet = new DiamondCutFacet();
         diamond = new Diamond(address(this), address(dCutFacet));
@@ -87,12 +87,82 @@ contract DiamondDeployer is DiamondUtils, IDiamondCut {
 
     // tests for nft collateral and loan management features
     function test_NFT_Collateral() public {}
-    
+
     function test_Loan_Management() public {}
+
+    // Test the deposit functionality in FundManagementFacet
+    function testDepositFunds() public {
+        uint256 depositAmount = 2 ether;
+
+        // Deposit into the diamond
+        (bool success, ) = address(diamond).call{value: depositAmount}(
+            abi.encodeWithSignature("deposit()")
+        );
+        require(success, "Deposit failed");
+
+        // Check if the funds are recorded correctly
+        uint256 availableFunds = FundManagementFacet(address(diamond))
+            .getAvailableFunds();
+        assertEq(
+            availableFunds,
+            depositAmount,
+            "Available funds after deposit are incorrect"
+        );
+    }
+
+    // Test the withdraw functionality in FundManagementFacet
+    function testWithdrawFunds() public {
+        uint256 depositAmount = 2 ether;
+        uint256 withdrawAmount = 1 ether;
+
+        // First deposit
+        (bool successDeposit, ) = address(diamond).call{value: depositAmount}(
+            abi.encodeWithSignature("deposit()")
+        );
+        require(successDeposit, "Initial deposit failed");
+
+        // Withdraw from the diamond
+        FundManagementFacet(address(diamond)).withdraw(withdrawAmount);
+
+        // Verify remaining balance
+        uint256 availableFunds = FundManagementFacet(address(diamond))
+            .getAvailableFunds();
+        assertEq(
+            availableFunds,
+            depositAmount - withdrawAmount,
+            "Available funds after withdrawal are incorrect"
+        );
+
+        // Verify contract balance in Diamond
+        uint256 contractBalance = address(diamond).balance;
+        assertEq(
+            contractBalance,
+            depositAmount - withdrawAmount,
+            "Diamond balance after withdrawal is incorrect"
+        );
+    }
+
+    // Test insufficient withdrawal protection in FundManagementFacet
+    function testWithdrawMoreThanAvailable() public {
+        uint256 depositAmount = 1 ether;
+        uint256 overdrawAmount = 2 ether;
+
+        // Deposit into the diamond
+        (bool successDeposit, ) = address(diamond).call{value: depositAmount}(
+            abi.encodeWithSignature("deposit()")
+        );
+        require(successDeposit, "Deposit failed");
+
+        // Attempt to withdraw more than available
+        vm.expectRevert("Insufficient funds"); 
+        FundManagementFacet(address(diamond)).withdraw(overdrawAmount);
+    }
 
     function diamondCut(
         FacetCut[] calldata _diamondCut,
         address _init,
         bytes calldata _calldata
     ) external override {}
+
+    receive() external payable {}
 }

@@ -10,9 +10,9 @@ import "openzeppelin-contracts/contracts/access/Ownable.sol";
 contract TestNft is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
     uint256 private _nextTokenId;
 
-    constructor(address initialOwner)
+    constructor()
         ERC721("TestNft", "TNFT")
-        Ownable(initialOwner)
+        Ownable(msg.sender)
     {}
 
     function safeMint(address to, string memory uri) public onlyOwner {

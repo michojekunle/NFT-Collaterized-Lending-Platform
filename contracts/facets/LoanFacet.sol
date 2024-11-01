@@ -8,6 +8,7 @@ contract LoanFacet {
     constructor(address _nftCollateralFacetAddress) {
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
         ds.nftCollateralFacetAddress = _nftCollateralFacetAddress;
+        LibDiamond.setInterestRate(5);
     }
 
     // Create a loan with fixed interest rate
@@ -73,6 +74,18 @@ contract LoanFacet {
 
         emit LibDiamond.NftCollateralFacetAddressUpdated(
             _nftCollateralFacetAddress
+        );
+    }
+
+    function updateInterstRate(
+        uint256 _rate
+    ) external {
+        LibDiamond.enforceIsContractOwner();
+
+        LibDiamond.setInterestRate(_rate);
+
+        emit LibDiamond.InterestRateUpdated(
+            _rate
         );
     }
 }

@@ -110,6 +110,8 @@ library LibDiamond {
         address newNftCollateralFacetAddress
     );
 
+    event InterestRateUpdated(uint256 _rate);
+
     function setContractOwner(address _newOwner) internal {
         DiamondStorage storage ds = diamondStorage();
         address previousOwner = ds.contractOwner;

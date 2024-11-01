@@ -3,8 +3,9 @@ pragma solidity ^0.8.0;
 
 import {LibDiamond} from "../libraries/LibDiamond.sol";
 import "openzeppelin-contracts/contracts/token/ERC721/IERC721.sol";
+import "openzeppelin-contracts/contracts/token/ERC721/IERC721Receiver.sol";
 
-contract NFTCollateralFacet {
+contract NFTCollateralFacet is IERC721Receiver {
     // Deposit NFT as collateral
     function depositNFT(address _nftContract, uint256 _nftId) external {
         IERC721 nft = IERC721(_nftContract);
@@ -65,5 +66,15 @@ contract NFTCollateralFacet {
             collateral.nftAddress,
             collateral.tokenId
         );
+    }
+
+    function onERC721Received(
+        address operator,
+        address from,
+        uint256 tokenId,
+        bytes calldata data
+    ) external pure override returns (bytes4) {
+        // This function simply returns a specific selector to indicate the contract can receive NFTs
+        return IERC721Receiver.onERC721Received.selector;
     }
 }
